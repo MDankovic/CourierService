@@ -14,31 +14,12 @@ import rs.etf.sab.operations.CourierOperations;
 public class dm180096_CourierOperationsImpl implements CourierOperations {
 	private Connection connection = DB.getInstance().getConnection();
 	
-	private int userExists(String userName) {
-		int id = -1;
-		
-		try (PreparedStatement pstGetUserByUsername = connection
-				.prepareStatement("select Id from KORISNIK where KorisnickoIme = ?");) {
-			pstGetUserByUsername.setString(1, userName);
-			ResultSet rsUsers = pstGetUserByUsername.executeQuery();
-			
-			if(rsUsers.next()) {
-				id = rsUsers.getInt(1);
-			}
-		} catch (SQLException s) {
-			s.printStackTrace();
-			return id;
-		}
-		
-		return id;
-	}
-	
 	@Override
 	public boolean deleteCourier(String courierUserName) {
 		int cnt = 0;
 		
 		try (PreparedStatement pstDeleteUsers = connection
-				.prepareStatement("delete from KURIR where Id = (select Id from KORISNIK where KorisnickoIme = ?)");) {
+				.prepareStatement("delete from KURIR where KorisnickoIme = ?");) {
 			pstDeleteUsers.setString(1, courierUserName);
 
 			cnt = pstDeleteUsers.executeUpdate();
@@ -55,7 +36,7 @@ public class dm180096_CourierOperationsImpl implements CourierOperations {
 		List<String> couriers = new ArrayList<String>();
 
 		try (Statement stGetCouriers = connection.createStatement();) {
-			ResultSet rsCouriers = stGetCouriers.executeQuery("select KorisnickoIme from KORISNIK join KURIR on Id");
+			ResultSet rsCouriers = stGetCouriers.executeQuery("select KorisnickoIme from KURIR");
 
 			while (rsCouriers.next()) {
 				couriers.add(rsCouriers.getString(1));
@@ -72,7 +53,7 @@ public class dm180096_CourierOperationsImpl implements CourierOperations {
 		BigDecimal avgProfit = new BigDecimal(0);
 
 		try (PreparedStatement pstGetCouriersProfit = connection
-				.prepareStatement("select avg(Profit) from KURIR where KURIR.BrojPaketa = ?");) {
+				.prepareStatement("select coalesce(avg(Profit), 0) from KURIR where KURIR.BrojPaketa = ?");) {
 			pstGetCouriersProfit.setInt(1, numberOfDeliveries);
 			ResultSet rsCouriers = pstGetCouriersProfit.executeQuery();
 
@@ -91,7 +72,7 @@ public class dm180096_CourierOperationsImpl implements CourierOperations {
 		List<String> couriers = new ArrayList<String>();
 
 		try (PreparedStatement pstGetCouriers = connection.prepareStatement(
-				"select KORISNIK.KorisnickoIme from KORISNIK join KURIR on Id where KURIR.Status = ?");) {
+				"select KorisnickoIme from KURIR where Status = ?");) {
 			pstGetCouriers.setInt(1, status);
 			ResultSet rsCouriers = pstGetCouriers.executeQuery();
 
@@ -106,17 +87,11 @@ public class dm180096_CourierOperationsImpl implements CourierOperations {
 	}
 
 	@Override
-	public boolean insertCourier(String userName, String licencePlateNumber) {
-		int id = this.userExists(userName);
-		
-		if(id == -1) {
-			return false;
-		}
-		
+	public boolean insertCourier(String userName, String driverLicenceNumber) {
 		try (PreparedStatement pstInsertCourier = connection.prepareStatement(
-				"insert into KORISNIK (Id, BrojVozackeDozvole) VALUES(?, ?)");) {
-			pstInsertCourier.setInt(1, id);			
-			pstInsertCourier.setString(2, licencePlateNumber);
+				"insert into KURIR (KorisnickoIme, BrojVozackeDozvole, Status, Profit, Distanca, BrojPaketa) VALUES(?, ?, 0, 0, 0, 0)");) {
+			pstInsertCourier.setString(1, userName);			
+			pstInsertCourier.setString(2, driverLicenceNumber);
 			pstInsertCourier.executeUpdate();
 		} catch (SQLException s) {
 			s.printStackTrace();

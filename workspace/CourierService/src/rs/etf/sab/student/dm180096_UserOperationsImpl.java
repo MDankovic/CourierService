@@ -37,33 +37,26 @@ public class dm180096_UserOperationsImpl implements UserOperations {
 		return hasSmallLetter.find() && hasBigLetter.find() && hasDigit.find() && hasSpecial.find() && password.length() >= 8;
 	}
 	
-	private int userExists(String userName) {
-		int id = -1;
-		
-		try (PreparedStatement pstGetUserByUsername = connection
-				.prepareStatement("select Id from KORISNIK where KorisnickoIme = ?");) {
-			pstGetUserByUsername.setString(1, userName);
-			ResultSet rsUsers = pstGetUserByUsername.executeQuery();
+	private boolean userExists(String username) {
+		try (PreparedStatement pstUserExists = connection
+				.prepareStatement("select * from KORISNIK where KorisnickoIme = ?");) {
+			pstUserExists.setString(1, username);
+			ResultSet rsUser = pstUserExists.executeQuery();
 			
-			if(rsUsers.next()) {
-				id = rsUsers.getInt(1);
+			if(rsUser.next()) {
+				return true;
 			}
 		} catch (SQLException s) {
 			s.printStackTrace();
-			return id;
 		}
-		
-		return id;
+
+		return false;
 	}
 
 	@Override
 	public boolean declareAdmin(String userName) {
-		if(userExists(userName) == -1) {
-			return false;
-		}
-		
 		try (PreparedStatement pstDeclareAdmin = connection
-				.prepareStatement("insert into ADMINISTRATOR (Id) values ((select Id from KORISNIK where KorisnickoIme = ?))");) {
+				.prepareStatement("insert into ADMINISTRATOR (KorisnickoIme) values (?)");) {
 			pstDeclareAdmin.setString(1, userName);
 			pstDeclareAdmin.executeUpdate();
 		} catch (SQLException s) {
@@ -112,9 +105,32 @@ public class dm180096_UserOperationsImpl implements UserOperations {
 	}
 
 	@Override
-	public int getSentPackages(String... arg0) {
-		// TODO Auto-generated method stub
-		return 0;
+	public int getSentPackages(String... userNames) {
+		int cnt = 0;
+		boolean userExists = false;
+		
+		try (PreparedStatement pstCountPackages = connection.prepareStatement("select count(*) from PAKET where KorisnickoIme = ?");) {
+			for (String name : userNames) {
+				pstCountPackages.setString(1, name);
+				try {
+					if(this.userExists(name)) {
+						userExists = true;
+					}
+					
+					ResultSet rsCountPackages = pstCountPackages.executeQuery();
+					if(rsCountPackages.next()) {
+						cnt += rsCountPackages.getInt(1);
+						System.out.println(cnt);
+					}
+				} catch (SQLException s) {
+					s.printStackTrace();
+				}
+			}
+		} catch (SQLException s) {
+			s.printStackTrace();
+		}
+
+		return userExists ? cnt : -1;
 	}
 
 	@Override

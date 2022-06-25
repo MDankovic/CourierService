@@ -105,11 +105,6 @@ public class dm180096_StockroomOperationsImpl implements StockroomOperations {
 
 	@Override
 	public int insertStockroom(int address) {
-		int idCity = this.getCityForAddress(address);
-		if(this.cityHasStockroom(idCity)) {
-			return -1;
-		}
-		
 		try (PreparedStatement pstInsertStockroom = connection.prepareStatement("insert into MAGACIN (IdAdresa) VALUES(?)");) {
 			pstInsertStockroom.setInt(1, address);
 			pstInsertStockroom.executeUpdate();

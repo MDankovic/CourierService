@@ -106,7 +106,7 @@ public class dm180096_VehicleOperationsImpl implements VehicleOperations {
 	public boolean insertVehicle(String licencePlateNumber, int fuelType, BigDecimal fuelConsumtion,
 			BigDecimal capacity) {
 		try (PreparedStatement pstInsertVehicle = connection.prepareStatement(
-				"insert into VOZILO (RegistracioniBroj, TipGoriva, Potrosnja, Nosivost) VALUES(?, ?, ?, ?)");) {
+				"insert into VOZILO (RegistracioniBroj, TipGoriva, Potrosnja, Nosivost, Zauzeto) VALUES(?, ?, ?, ?, 0)");) {
 			pstInsertVehicle.setString(1, licencePlateNumber);
 			pstInsertVehicle.setInt(2, fuelType);
 			pstInsertVehicle.setBigDecimal(3, fuelConsumtion);
